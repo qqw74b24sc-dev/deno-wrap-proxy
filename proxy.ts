@@ -1,24 +1,29 @@
-// 可靠的UA随机依赖（Deno Land已收录，可正常下载）
-import { getRandom } from "https://deno.land/x/random_useragent@v2.0.0/mod.ts";
 // Cloudflare IPv6网关（全球通用）
 const CLOUDFLARE_IPV6 = "2606:4700:20::ac43:12a1";
+
+// 内置UA列表（随机选，无需依赖）
+const UA_LIST = [
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36",
+  "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1",
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Firefox/119.0"
+];
 
 addEventListener("fetch", async (event) => {
   const request = event.request;
   const url = new URL(request.url);
 
-  // 从请求路径提取任意目标网站（例如：/https://www.bilibili.com）
+  // 提取任意目标网站（格式：/https://目标地址）
   const targetUrlStr = url.pathname.slice(1);
   if (!targetUrlStr.startsWith("http")) {
-    return new Response("请输入完整目标URL（如 /https://www.baidu.com）", { status: 400 });
+    return new Response("请输入完整目标URL，例如：/https://www.baidu.com", { status: 400 });
   }
   const targetUrl = new URL(targetUrlStr);
 
-  // 伪装请求头（含随机UA）
+  // 随机选UA（无依赖）+ 伪装请求头
   const headers = new Headers(request.headers);
-  headers.set("Host", targetUrl.host); // 自动适配目标网站的Host
-  headers.set("User-Agent", getRandom()); // 调用可靠的随机UA依赖
-  headers.delete("Via"); // 移除代理痕迹
+  headers.set("Host", targetUrl.host); // 自动适配目标网站
+  headers.set("User-Agent", UA_LIST[Math.floor(Math.random() * UA_LIST.length)]);
+  headers.delete("Via");
 
   // 转发请求到Cloudflare IPv6隧道
   const proxyUrl = `https://[${CLOUDFLARE_IPV6}]${targetUrl.pathname}${targetUrl.search}`;
